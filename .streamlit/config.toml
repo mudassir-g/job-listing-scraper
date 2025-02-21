@@ -1,0 +1,8 @@
+[browser]
+gatherUsageStats = false
+
+[theme]
+primaryColor="#fb6e05"
+backgroundColor="#fb6e05"
+font="sans serif"
+base="dark"
