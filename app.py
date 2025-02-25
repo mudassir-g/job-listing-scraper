@@ -1,8 +1,7 @@
-from types import SimpleNamespace
-
 import streamlit as st
-from crosslinked import start_scrape
 from jobspy import scrape_jobs
+
+from employee_search import search_employees
 
 
 def get_jobs(search_term, portals, location, results_wanted=1, days_old=1):
@@ -18,21 +17,13 @@ def get_jobs(search_term, portals, location, results_wanted=1, days_old=1):
     return jobs
 
 
-def get_employees(company_name):
-    args = SimpleNamespace(
-        engine=["google", "bing"],
-        company_name=company_name,
-        timeout=10,
-        proxy=[],
-        jitter=3
-    )
-    employees = start_scrape(args)
-    return employees
+def get_employees(company_name, designations, results_wanted=10):
+    return search_employees(company_name, designations, results_wanted)
 
 
 # Set the title of the app
 st.title("vSaaS - Job Search Portal")
-st.sidebar.title("Search")
+st.sidebar.title("Search Jobs")
 
 # Create a text box for the search term
 search_term = st.sidebar.text_input("Search term")
@@ -61,8 +52,8 @@ location = st.sidebar.selectbox("Location", options=[
     "Uruguay", "Venezuela", "Vietnam", "USA/CA", "Worldwide"
 ], index=64)
 
-results_wanted = st.sidebar.number_input(
-    "Results wanted", value=10, min_value=1, max_value=50)
+job_results_wanted = st.sidebar.number_input(
+    "Results wanted", key="jobs_results_wanted", value=10, min_value=1, max_value=50)
 job_post_age = st.sidebar.number_input(
     "Age of job posting (in days)", value=1, min_value=1, max_value=365)
 
@@ -76,16 +67,36 @@ if st.sidebar.button("Submit") and search_term:
     st.write(f"**Age of job posting:** {job_post_age} day(s)")
 
     with st.spinner("Searching..."):
-        jobs = get_jobs(search_term, portals, location,
-                        results_wanted, job_post_age)
-        st.dataframe(jobs)
-
+        try:
+            jobs = get_jobs(search_term, portals, location,
+                            job_results_wanted, job_post_age)
+            st.dataframe(jobs)
+        except Exception as e:
+            st.write("You are searching too fast. Try after sometime..")
+            with st.expander("Error Details"):
+                st.write(e)
 
 st.sidebar.divider()
+
+st.sidebar.title("Search Employees")
 company_name = st.sidebar.text_input("Enter LinkedIn Company name")
+designations = st.sidebar.text_area("Enter Designations (comma separated)")
+emp_results_wanted = st.sidebar.number_input(
+    "Results wanted", key='emp_results_wanted', value=10, min_value=1, max_value=50)
+if designations:
+    designations = designations.split(",")
 if st.sidebar.button("Search Employees") and company_name:
     with st.spinner("Searching..."):
-        employees = get_employees(company_name)
-        st.write("### Employees:")
-        for employee in employees:
-            st.write(employee)
+        st.write("### Searching for:")
+        st.write(f"**Company:** {company_name}")
+        st.write(f"**Designations:** {', '.join(designations)}")
+        try:
+            employees = get_employees(
+                company_name, designations, emp_results_wanted)
+            st.write("### Employees:")
+            for employee in employees:
+                st.write(employee)
+        except Exception as e:
+            st.write("You are searching too fast. Try after sometime..")
+            with st.expander("Error Details"):
+                st.write(e)
