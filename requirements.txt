@@ -1,3 +1,3 @@
 python-jobspy
 streamlit
-crosslinked
+duckduckgo_search
